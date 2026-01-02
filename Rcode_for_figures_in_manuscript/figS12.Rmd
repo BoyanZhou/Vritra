@@ -1,0 +1,57 @@
+---
+title: "Fig 12"
+author: "Boyan Zhou"
+data: "12-12-2025"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r library, message=FALSE, include=FALSE}
+library(dplyr)
+library(ggpubr)
+library(ggVennDiagram)
+```
+
+
+```{r, eval=FALSE, include=FALSE}
+
+p_baiB <- ggarrange(p_prevalence_baiB, p_log10_RPKM_baiB, ncol = 2,widths = c(2.7, 1)) %>%
+  annotate_figure(
+    top = text_grob(
+      expression("Prevalence and abundance of species-level "~italic(baiB)),
+      face = "bold",
+      size = 16
+    )
+  )
+
+p_baiE <- ggarrange(p_prevalence_baiE, p_log10_RPKM_baiE, ncol = 2,widths = c(1.8, 1)) %>%
+  annotate_figure(
+    top = text_grob(
+      expression("Prevalence and abundance of species-level "~italic(baiE)),
+      face = "bold",
+      size = 16
+    )
+  )
+
+two_genes_combined <- ggarrange(p_baiB, p_baiE, ncol = 2, nrow = 1, labels = c("a", "b"))
+
+ggsave(
+  filename = "figS12.jpg",
+  plot     = two_genes_combined,
+  width    = 12, 
+  height   = 6, 
+  units    = "in", 
+  dpi      = 500,
+  device   = "jpg"
+)
+```
+
