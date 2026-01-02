@@ -1,0 +1,493 @@
+---
+title: "Fig 4 and Fig S3~S8"
+author: "Boyan Zhou"
+data: "12-02-2025"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r library, message=FALSE, include=FALSE}
+library(dplyr)
+library(ggpubr)
+library(ggvenn)
+library(ggplot2)
+library(tidyr)
+library(phyloseq)
+require(ggsci)
+require(vegan)
+require(ANCOMBC)
+library("ggalluvial")
+library("RColorBrewer")
+library(tibble)
+```
+
+
+# 1. Generate abundance plot (FigS3 & S4)
+```{r , abundance plot, warning=FALSE, eval=FALSE, include=FALSE}
+##############################
+# 1. Generate abundance plot #
+##############################
+
+abundance_plot_genus_list <- list()
+for(subset_name in c("frc_dna", "frc_rna","oxc_dna", "oxc_rna")) {
+  # subset_name <- "frc_dna"
+  info_vec <- strsplit(subset_name, split = "_")[[1]]
+  # lookup <- c(dna = "metagenomic", rna = "metatranscriptomic")
+  lookup <- c(dna = "MGX", rna = "MTX")
+  data_type <- lookup[info_vec[2]]
+  gene_name <- info_vec[1]
+  
+  p_temp2 <- plot_bar(phylo_obj_RA_list[[subset_name]], fill="genus", title = bquote(italic(.(gene_name)) * " at genus level in " * .(data_type) * " data")) + facet_wrap(~reported_stone, scales="free_x", nrow=2) + theme_bw() + geom_bar(stat = "identity", position = "stack", colour = NA)+ theme(
+    axis.text.x = element_blank(), axis.ticks.x = element_blank()
+  ) + labs(fill = "Genus") +
+  scale_fill_discrete(
+    labels = function(x) lapply(x, function(lbl) bquote(italic(.(lbl))))
+  )
+  
+  abundance_plot_genus_list[[subset_name]] <- p_temp2
+}
+
+
+#########
+# FigS3 #
+#########
+names(abundance_plot_genus_list)
+### frc ###
+FigS3_p <- ggarrange(abundance_plot_genus_list[["frc_dna"]], abundance_plot_genus_list[["frc_rna"]], nrow = 2, common.legend = T, labels = c("a", "b"), legend = "right")
+ggsave(
+  filename = "FigS3.jpg",
+  plot     = FigS3_p,
+  width    = 8, 
+  height   = 6, 
+  units    = "in", 
+  dpi      = 500,
+  device   = "jpg"
+)
+
+#########
+# FigS4 #
+#########
+FigS4_p  <- ggarrange(abundance_plot_genus_list[["oxc_dna"]], abundance_plot_genus_list[["oxc_rna"]], nrow = 2, common.legend = T, labels = c("a", "b"), legend = "right")
+
+ggsave(
+  filename = "FigS4.jpg",
+  plot     = FigS4_p,
+  width    = 8, 
+  height   = 6, 
+  units    = "in", 
+  dpi      = 500,
+  device   = "jpg"
+)
+
+
+```
+
+
+# 2. Fig. S6 & S7
+```{r , warning=FALSE, eval=FALSE, include=FALSE}
+figs6a <- ggbarplot(filter(prevalence_df_long, gene == "frc"), 
+          x = "Group",       # x-axis: type
+          y = "Prevalence",       # height of bars
+          fill = "Group",     # different colors for the two groups
+          palette = c("#0072B2", "#D55E00"),
+          facet.by = "type",
+          ylab = "Prevalence (%)",
+          ylim = c(0, 85),
+          legend.title = "Stone status",
+          xlab = "",
+           add = "mean_se",
+          position = position_dodge()) + stat_pvalue_manual(pvals_frc,
+                     label = "label",
+                     y.position = "y.position") +
+  geom_text(aes(label = round(Prevalence, 1)),   # label values
+            position = position_dodge(0.9),      # align with bars
+            vjust = -0.3, size = 3) +
+  ggtitle(bquote("Prevalence of " * italic("frc") * " between SF and NSF groups")) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+figs6b <- ggbarplot(filter(prevalence_df_long, gene == "oxc"), 
+          x = "Group",       # x-axis: type
+          y = "Prevalence",       # height of bars
+          fill = "Group",     # different colors for the two groups
+          palette = c("#0072B2", "#D55E00"),
+          facet.by = "type",
+          ylab = "Prevalence (%)",
+          ylim = c(0, 85),
+          legend.title = "Stone status",
+          xlab = "",
+           add = "mean_se",
+          position = position_dodge()) + stat_pvalue_manual(pvals2,
+                     label = "label",
+                     y.position = "y.position") +
+  geom_text(aes(label = round(Prevalence, 1)),   # label values
+            position = position_dodge(0.9),      # align with bars
+            vjust = -0.3, size = 3) +
+  ggtitle(bquote("Prevalence of " * italic("oxc") * " between SF and NSF groups")) +
+  theme(plot.title = element_text(hjust = 0.5))             
+
+
+figs6 <- ggarrange(figs6a, figs6b, labels = c("a", "b"), ncol = 2, common.legend = T, legend = "right")
+
+
+ggsave(
+  filename = paste0("figs6.jpg"),
+  plot     = figs6,
+  width    = 10, 
+  height   = 5, 
+  units    = "in", 
+  dpi      = 500,
+  device   = "jpg"
+)
+
+
+#-------------------------------------------------------------------------------------
+
+##########
+# Fig S7 #
+##########
+rpkm_boxplot_frc <- ggboxplot(filter(rpkm_summarized_stat, gene == "frc"), 
+          x = "reported_stone",       # x-axis: type
+          y = "rpkm",       # height of bars
+          fill = "reported_stone",     # different colors for the two groups
+          palette = c("#0072B2", "#D55E00"),
+          facet.by = "type",
+          ylab = "RPKM",
+          ylim = c(0, 300),
+          legend.title = "Stone status",
+          xlab = "") + stat_pvalue_manual(pvals_3,
+                     label = "label",
+                     y.position = "y.position") +
+  ggtitle(bquote("Abundance of " * italic("frc") * " between SF and NSF groups")) +
+  theme(plot.title = element_text(hjust = 0.5))  
+
+
+rpkm_boxplot_oxc <- ggboxplot(filter(rpkm_summarized_stat, gene == "oxc"), 
+          x = "reported_stone",       # x-axis: type
+          y = "rpkm",       # height of bars
+          fill = "reported_stone",     # different colors for the two groups
+          palette = c("#0072B2", "#D55E00"),
+          facet.by = "type",
+          ylab = "RPKM",
+          ylim = c(0, 250),
+          legend.title = "Stone status",
+          xlab = "") + stat_pvalue_manual(pvals_4,
+                     label = "label",
+                     y.position = "y.position") +
+  ggtitle(bquote("Abundance of " * italic("oxc") * " between SF and NSF groups")) +
+  theme(plot.title = element_text(hjust = 0.5))  
+
+rpkm_boxplot_combined <- ggarrange(rpkm_boxplot_frc, rpkm_boxplot_oxc, labels = c("a", "b"), ncol = 2, common.legend = T, legend = "right")
+
+
+ggsave(
+  filename = paste0("figS7.jpg"),
+  plot     = rpkm_boxplot_combined,
+  width    = 12, 
+  height   = 6, 
+  units    = "in", 
+  dpi      = 500,
+  device   = "jpg"
+)
+
+```
+
+
+# 3. FigS5
+```{r Alpha diversity, eval=FALSE, include=FALSE}
+# 2) one single ggboxplot
+alpha_p <- ggboxplot(
+  df_long, 
+  x        = stone_variable, 
+  y        = "value",
+  color    = stone_variable,         # or fill = "group"
+  palette =c("#0072B2", "#D55E00"), 
+  add = "jitter",
+  facet.by = "variable",      # separate facet for each variable
+  scales   = "free_y", 
+  short.panel.labs = TRUE
+) + stat_compare_means(paired = FALSE, method = "t.test",
+    label = "p.format") + 
+  labs(
+    x = "",
+    y = "Value",
+    # title = paste0("Alpha diversity of ", info_vec[1], " functional profiles in ", data_type, " data")
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
+  
+  alpha_reported_stone_p_list[[i]] <- alpha_p
+}
+
+alpha_reported_stone_p_list[[1]]
+
+alpha_all_combined <- ggarrange(alpha_reported_stone_p_list[[1]] +
+  ggtitle(bquote("α-diversity for " * italic("frc") * " in MGX samples")) +
+  theme(plot.title = element_text(hjust = 0.5)) , 
+                                alpha_reported_stone_p_list[[2]] +
+  ggtitle(bquote("α-diversity for " * italic("frc") * " in MTX samples")) +
+  theme(plot.title = element_text(hjust = 0.5)) , 
+                                alpha_reported_stone_p_list[[3]] +
+  ggtitle(bquote("α-diversity for " * italic("oxc") * " in MGX samples")) +
+  theme(plot.title = element_text(hjust = 0.5)) , 
+                                alpha_reported_stone_p_list[[4]]+
+  ggtitle(bquote("α-diversity for " * italic("oxc") * " in MTX samples")) +
+  theme(plot.title = element_text(hjust = 0.5)) , 
+                                ncol = 2, nrow = 2, common.legend = T, 
+                                labels = c("a", "b", "c", "d"),legend = "right")
+
+ggsave(
+  filename = "figs5.jpg",
+  plot     = alpha_all_combined,
+  width    = 12, 
+  height   = 8, 
+  units    = "in", 
+  dpi      = 500,
+  device   = "jpg"
+)
+
+
+```
+
+
+# 4. Fig.4 & Fig.S8
+```{r community contribution, warning=FALSE, eval=FALSE, include=FALSE}
+rpkm_prevalence_plot_list <- list()
+
+for(i in c("frc_dna", "frc_rna", "oxc_dna", "oxc_rna")) {
+  # i = "frc_rna"
+
+  phylo_obj_temp <- phylo_obj_list[[i]]
+  otu_temp <- data.frame(otu_table(phylo_obj_temp))
+  metadata_temp <- sample_data(phylo_obj_temp)
+  
+  otu_temp_SF <- otu_temp[, which(metadata_temp$reported_stone == "SF")]
+  otu_temp_NSF <- otu_temp[, which(metadata_temp$reported_stone == "NSF")]
+  ####################################
+  # prevalence test for each species #
+  ####################################
+  prevalence_count_tab <- cbind(rowSums(otu_temp_SF > 0), rowSums(otu_temp_SF == 0), rowSums(otu_temp_NSF > 0), rowSums(otu_temp_NSF == 0))
+  
+  prevalence_count_test_res <- run_fisher_or_chisq(prevalence_count_tab)
+  chi_test_res[[i]] <- prevalence_count_test_res
+  
+  ###################
+  # prevalence plot #
+  ###################
+  prevalence_tab <- data.frame(SF = rowMeans(otu_temp_SF > 0), 
+                               NSF = rowMeans(otu_temp_NSF > 0))
+  prevalence_tab$species <- rownames(prevalence_tab)
+  # species_to_exclude <- c("Azospirillum sp. 51_20", "Cupriavidus basilensis")
+  prevalence_long <- prevalence_tab %>%
+  pivot_longer(
+    cols = c(SF, NSF),
+    names_to = "Stone status",
+    values_to = "prevalence"
+  )
+  
+  prevalence_long$prevalence <- prevalence_long$prevalence * 100
+  p_pre <- ggbarplot(prevalence_long, 
+          x = "species", 
+          y = "prevalence", 
+          fill = "Stone status",
+          position = position_dodge(),
+          palette = c("#0072B2", "#D55E00"),
+          ylab = "Prevalence (%)",
+          xlab = "Species",
+          legend.title = "Stone status",
+          flip=TRUE, x.text.angle = 0) + theme(
+    axis.title.y = element_blank(),  
+    axis.text.y = element_blank(),   
+    # axis.ticks.y = element_blank()
+  )+ 
+  labs(title = "",
+       x = "", y = "Prevalence(%)") +
+          coord_flip()
+  
+  #################
+  # RPKM box plot #
+  #################
+  otu_temp_SF1 <- otu_temp_SF
+  otu_temp_SF1$species <- rownames(otu_temp_SF1)
+  otu_temp_SF1_long <- otu_temp_SF1 %>%
+  pivot_longer(
+    cols = -species,      # all columns except species
+    names_to = "sample",  # new column for sample names
+    values_to = "RPKM"   # new column for values
+  )
+  otu_temp_SF1_long$`Stone status` <- "SF"
+  #---------------------------------
+  otu_temp_NSF1 <- otu_temp_NSF
+  otu_temp_NSF1$species <- rownames(otu_temp_NSF1)
+  otu_temp_NSF1_long <- otu_temp_NSF1 %>%
+  pivot_longer(
+    cols = -species,      # all columns except species
+    names_to = "sample",  # new column for sample names
+    values_to = "RPKM"   # new column for values
+  )
+  otu_temp_NSF1_long$`Stone status` <- "NSF"
+  #---------------------------------
+  otu_long <- rbind(otu_temp_SF1_long, otu_temp_NSF1_long)
+  # otu_long_filtered <- otu_long %>% filter(RPKM >0 )
+  otu_long_filtered <- otu_long
+  otu_long_filtered$RPKM[otu_long_filtered$RPKM == 0] <- NA
+  otu_long_filtered$log10_RPKM <- log10(otu_long_filtered$RPKM)
+  p_box <- ggboxplot(otu_long_filtered, 
+          x = "species", 
+          y = "log10_RPKM", 
+          fill = "Stone status",
+          # position = position_dodge(),
+          palette = c("#0072B2", "#D55E00"),
+          ylab = "log10_RPKM",
+          xlab = "Species",
+          legend.title = "Stone status",
+          flip=TRUE, x.text.angle = 0) +
+      labs(title = "",
+       x = "", y = "Log10 RPKM") +
+          coord_flip() +
+  scale_x_discrete(labels = function(x) lapply(x, function(lbl) bquote(italic(.(lbl)))))
+  
+  p_combined <- ggarrange(p_box, p_pre, ncol = 2, widths = c(1.7, 1), common.legend = T)
+  rpkm_prevalence_plot_list[[i]] <- p_combined
+  
+  ggsave(
+  filename = paste0(i, "_RPKM_prevalence_by_stone_status.jpg"),
+  plot     = p_combined,
+  width    = 12, 
+  height   = 9, 
+  units    = "in", 
+  dpi      = 300,
+  device   = "jpg"
+)
+}
+
+
+
+contribution_liu_plot_list <- NULL
+test_p_list <- NULL 
+contribution_res_table_list <- NULL
+
+for(i in c("frc_dna", "frc_rna", "oxc_dna", "oxc_rna")) {
+  # i = "frc_rna"
+  print(i)
+  gene_name <- strsplit(i, split = "_")[[1]][1]
+  info_vec <- strsplit(i, split = "_")[[1]]
+  lookup <- c(dna = "MGX", rna = "MTX")
+  data_type <- lookup[info_vec[2]]
+
+  phylo_obj_temp <- phylo_obj_list[[i]]
+  phylo_obj_temp <- tax_glom(phylo_obj_temp, "genus")
+  # tax_table(phylo_obj_temp)
+  otu_temp <- data.frame(otu_table(phylo_obj_temp))
+  tax_temp <- data.frame(tax_table(phylo_obj_temp))
+  rownames(otu_temp) <- tax_temp$genus
+  metadata_temp <- sample_data(phylo_obj_temp)
+  
+  # calculate Cij
+  otu_ra_temp <- sweep(otu_temp, 2, colSums(otu_temp), FUN = "/")
+  otu_temp_SF <- otu_ra_temp[, which(metadata_temp$reported_stone == "SF")]
+
+  otu_temp_SF[is.na(otu_temp_SF)] <- 0
+  otu_temp_NSF <- otu_ra_temp[, which(metadata_temp$reported_stone == "NSF")]
+
+  otu_temp_NSF[is.na(otu_temp_NSF)] <- 0
+  
+  mean(as.numeric(otu_temp_SF[rownames(otu_temp_SF) == "Oxalobacter",]))
+  mean(as.numeric(otu_temp_NSF[rownames(otu_temp_NSF) == "Oxalobacter",]))
+
+  t_pvalue <- t.test(as.numeric(otu_temp_SF[rownames(otu_temp_SF) == "Oxalobacter",]), as.numeric(otu_temp_NSF[rownames(otu_temp_NSF) == "Oxalobacter",]))$p.value
+  wilcox_pvalue <- wilcox.test(as.numeric(otu_temp_SF[rownames(otu_temp_SF) == "Oxalobacter",]),
+         as.numeric(otu_temp_NSF[rownames(otu_temp_NSF) == "Oxalobacter",]))$p.value
+  test_p_list[[i]] <- c(t_pvalue, wilcox_pvalue)
+  
+  pop_contribution <- data.frame(NSF = rowSums(otu_temp_NSF)/sum(rowSums(otu_temp_NSF)), 
+                                 SF = rowSums(otu_temp_SF)/sum(rowSums(otu_temp_SF)))
+  contribution_res_table_list[[i]] <- pop_contribution
+
+  species_dna_top10 <- rownames(pop_contribution)[order(pop_contribution[["NSF"]], 
+                                                        decreasing = T)[1:10]]
+  species_rna_top10 <- rownames(pop_contribution)[order(pop_contribution[["SF"]], 
+                                                        decreasing = T)[1:10]]
+  species_rna_top10_overlap <- unique(c(species_dna_top10, species_rna_top10))
+
+  pop_contribution_reduced <- pop_contribution[rownames(pop_contribution) %in% species_rna_top10_overlap,]
+  Others <- 1 - colSums(pop_contribution_reduced)
+  pop_contribution_reduced <- rbind(pop_contribution_reduced, Others)
+  rownames(pop_contribution_reduced)[nrow(pop_contribution_reduced)] <- "Others"
+  
+  pop_contribution_reduced_trans <- data.frame(data_type = rep(c("NSF", "SF"),
+                                                               c(nrow(pop_contribution_reduced), nrow(pop_contribution_reduced))), 
+                                               species = rep(rownames(pop_contribution_reduced),2),
+                                               contribution = c(pop_contribution_reduced[["NSF"]], pop_contribution_reduced[["SF"]]))
+  
+  pop_contribution_reduced_trans$species <- factor(pop_contribution_reduced_trans$species, levels = rownames(pop_contribution_reduced))
+
+  plot_temp <- ggplot(pop_contribution_reduced_trans, aes(x = data_type, y = contribution, alluvium = species)) + 
+	geom_alluvium(aes(fill = species), colour = "black", alpha = 1, decreasing = F) + 
+	labs(x = "", y = "Proportion", fill = "", colour = "", title=bquote("Population-level genus contributions to " * italic(.(gene_name)) * " in " * .(data_type) * " data")) + 
+	scale_x_discrete(expand = c(0.02,0.02)) + 
+	theme(legend.position = "right", axis.text.y = element_text(colour = "black", size = 12, face = "bold"), 
+	axis.text.x = element_text(colour = "black", face = "bold", angle =0, size = 12, vjust = 0.5), 
+	axis.title.y = element_text(colour = "black", face = "bold", size = 14), 
+	panel.background = element_blank(), panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+	legend.text = element_text(size = 10, face = "italic")) + 
+	scale_fill_manual(values = nature_palette)
+  
+  # save plot in list
+  contribution_liu_plot_list[[i]] <- plot_temp
+  
+}
+
+names(rpkm_prevalence_plot_list)
+
+frc_combined_plot <- ggarrange(rpkm_prevalence_plot_list[["frc_dna"]], rpkm_prevalence_plot_list[["frc_rna"]], contribution_liu_plot_list[["frc_dna"]], contribution_liu_plot_list[["frc_rna"]], labels = c("a", "b", "c", "d"), nrow = 2, ncol=2)
+
+ggsave(
+  filename = "fig4_1208.jpg",
+  plot     = frc_combined_plot,
+  width    = 16, 
+  height   = 16, 
+  units    = "in", 
+  dpi      = 500,
+  device   = "jpg"
+)
+
+
+oxc_combined_plot <- ggarrange(rpkm_prevalence_plot_list[["oxc_dna"]], rpkm_prevalence_plot_list[["oxc_rna"]], contribution_liu_plot_list[["oxc_dna"]], contribution_liu_plot_list[["oxc_rna"]], labels = c("a", "b", "c", "d"), nrow = 2, ncol=2)
+
+ggsave(
+  filename = "figs8_1208.jpg",
+  plot     = oxc_combined_plot,
+  width    = 16, 
+  height   = 16, 
+  units    = "in", 
+  dpi      = 500,
+  device   = "jpg"
+)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

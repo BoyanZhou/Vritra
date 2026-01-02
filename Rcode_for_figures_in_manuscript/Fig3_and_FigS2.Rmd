@@ -1,0 +1,110 @@
+---
+title: "Fig3_and_FigS2"
+author: "Boyan Zhou"
+data: "12-20-2025"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r library, message=FALSE, include=FALSE}
+library(dplyr)
+library(ggpubr)
+library(igraph)
+library(rgl) 
+library(ggsci)
+library(viridis)
+```
+
+
+## MGX
+```{r, include=FALSE}
+MGX_count_p <- ggbarplot(summary_308_subejct,
+               x = "Gene",
+               y = "Count_log10",
+               fill = "Method",
+               palette = "jco",
+               position = position_dodge(0.8), # wider dodge for two bars per group
+               width = 0.6
+)+ geom_errorbar(
+      aes(ymin = Count_log10 - Count_log10_sd, ymax = Count_log10 + Count_log10_sd, group = Method),
+      width = 0.2,
+      position = position_dodge(0.8)
+) +
+  labs(x = "", 
+       y = "Count (log10)") + ggtitle("Average read counts across MGX samples") + theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face = "italic", angle = 45, hjust = 1),legend.position = "none")
+
+
+MGX_identity_p <- ggbarplot(summary_308_subejct,
+               x = "Gene",
+               y = "Identity",
+               fill = "Method",
+               palette = "jco",
+               position = position_dodge(0.8), # wider dodge for two bars per group
+               width = 0.6,
+               ylim = c(90, 100)
+)+ geom_errorbar(
+      aes(ymin = Identity - Identity_sd, ymax = Identity + Identity_sd, group = Method),
+      width = 0.2,
+      position = position_dodge(0.8)
+) +
+  labs(x = "", 
+       y = "Identity") + ggtitle("Average read identity to the database across MGX samples") + theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face = "italic", angle = 45, hjust = 1),legend.position = "none")
+
+```
+
+
+## MTX
+```{r, include=FALSE}
+MTX_count_p <- ggbarplot(summary_308_subejct_mtx,
+               x = "Gene",
+               y = "Count_log10",
+               fill = "Method",
+               palette = "jco",
+               position = position_dodge(0.8), # wider dodge for two bars per group
+               width = 0.6
+)+ geom_errorbar(
+      aes(ymin = Count_log10 - Count_log10_sd, ymax = Count_log10 + Count_log10_sd, group = Method),
+      width = 0.2,
+      position = position_dodge(0.8)
+) +
+  labs(x = "", 
+       y = "Count (log10)") + ggtitle("Average read counts across MTX samples") + theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face = "italic", angle = 45, hjust = 1),legend.position = "right")
+
+
+MTX_identity_p <- ggbarplot(summary_308_subejct_mtx,
+               x = "Gene",
+               y = "Identity",
+               fill = "Method",
+               palette = "jco",
+               position = position_dodge(0.8), # wider dodge for two bars per group
+               width = 0.6,
+               ylim = c(90, 100)
+)+ geom_errorbar(
+      aes(ymin = Identity - Identity_sd, ymax = Identity + Identity_sd, group = Method),
+      width = 0.2,
+      position = position_dodge(0.8)
+) +
+  labs(x = "", 
+       y = "Identity") + ggtitle("Average read identity to the database across MTX samples") + theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face = "italic", angle = 45, hjust = 1),legend.position = "right")
+
+```
+
+## Fig.3 and Fig.S2
+```{r, include=FALSE}
+fig3 <- ggarrange(MGX_count_p, MTX_count_p, ncol = 2, nrow=1, common.legend = T, legend = "right", labels = c("a", "b"))
+
+figS2 <- ggarrange(MGX_identity_p, MTX_identity_p, ncol = 2, nrow=1, common.legend = T, legend = "right", labels = c("a", "b"))
+
+ggsave("fig3.jpg", plot = fig3, dpi = 500, width = 10, height = 5, units = "in")
+ggsave("figS2.jpg", plot = figS2, dpi = 500, width =14, height = 5, units = "in")
+
+```
