@@ -1,0 +1,214 @@
+---
+title: "Fig.2 and Fig.S1"
+author: "Boyan Zhou"
+data: "12-06-2025"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r library, message=FALSE, include=FALSE}
+library(dplyr)
+library(ggpubr)
+library(igraph)
+library(rgl) 
+library(ggsci)
+library(viridis)
+library(ggplot2)
+library(ggpattern)
+```
+
+
+# 1. barplot of overlap between two InterPro and Vritra (Fig2 a)
+```{r eval=FALSE, include=FALSE}
+
+# target gene list
+target_gene <- c("ssnA", "xdhA", "ygeW", "ygeX", "ygeY", "ygfK", "hyuA", "frc", "oxc")
+
+
+# Shadow barplot between Vritra and InterPro
+counts_df_1 <- data.frame(
+  gene = target_gene,
+  InterPro_unique1 = db_overlap_summary_df_v6[target_gene,]$InterPro_n - db_overlap_summary_df_v6[target_gene,]$InterPro_overlap_n,
+  InterPro_Vritra_shared = db_overlap_summary_df_v6[target_gene,]$InterPro_overlap_n,
+  
+  Vritra_unique = db_overlap_summary_df_v6[target_gene,]$Vritra_n - db_overlap_summary_df_v6[target_gene,]$Vritra_overlap_n,
+  Vritra_InterPro_shared = db_overlap_summary_df_v6[target_gene,]$Vritra_overlap_n,
+  stringsAsFactors = FALSE
+)
+
+
+# transform data into long format
+long_df1 <- do.call(rbind, lapply(seq_len(nrow(counts_df_1)), function(i) {
+  # i = 6
+  d <- counts_df_1[i,]
+  df_ab <- rbind(
+    data.frame(gene=d$gene, bar="InterPro", segment=c("InterPro ∩ Vritra","InterPro only"), count=c(d$InterPro_Vritra_shared,d$InterPro_unique1)),
+    data.frame(gene=d$gene, bar="Vritra", segment=c("InterPro ∩ Vritra","Vritra only"), count=c(d$Vritra_InterPro_shared,d$Vritra_unique))
+  )
+  df_ab$comparison <- "InterPro vs Vritra"
+  df_ab
+}))
+
+
+# set the level of group factor
+long_df1$segment <- factor(long_df1$segment, levels = c("InterPro only","Vritra only", "InterPro ∩ Vritra"))
+long_df1$gene <- factor(long_df1$gene, levels = target_gene)
+
+db_colors <- c(
+  InterPro = "#A6CEE3", 
+  Vritra = "#FDBF6F"   
+)
+
+# pattern for overlap part between two database
+long_df1$pattern <- ifelse(long_df1$segment %in% c("InterPro ∩ UniProt","InterPro ∩ Vritra"), "overlap", "unique")
+
+
+# overlapping barplot
+fig2a <- ggplot(long_df1, aes(x = bar, y = count, fill = bar, pattern = pattern)) +
+  geom_col_pattern(
+    aes(order = segment),
+    stat           = "identity",
+    width          = 0.7,
+    colour         = "black",
+    size           = 0.25,
+    # pattern="stripe" 
+    pattern_fill   = "grey",
+    pattern_angle  = 45,
+    pattern_density= 0.15, #  0.3 
+    pattern_spacing= 0.06 #0.02 
+  ) +
+  facet_grid(comparison ~ gene, scales="free_x", space="free_x", switch="both") +
+  scale_fill_manual(values = db_colors) +
+  scale_pattern_manual(values = c(unique = NA, overlap = "stripe")) + 
+  guides(
+    # Database legend, pattern for "unique" to become none
+    fill = guide_legend(
+      override.aes = list(pattern = "none")
+    ),
+    # pattern legend: italic line to grey
+    pattern = guide_legend(
+      override.aes = list(
+        pattern_fill   = "grey10",
+        pattern_density= 0.2, # 0.3 
+        pattern_spacing= 0.01,
+        pattern_colour = "grey10",
+        fill = "grey85"
+      )
+    )
+  ) +
+  labs(x = NULL, y = "Sequence count", fill = "Database") +
+  theme_classic(base_size = 18) +
+  theme(
+    strip.placement    = "outside",
+    strip.background   = element_blank(),
+    # strip.text         = element_text(face="bold"),
+    strip.text.x = element_text(face = "italic"),
+    strip.text.y = element_blank(), # hide strip text y
+    axis.text.x = element_blank(),
+    # axis.text.x        = element_text(size=11),
+    panel.grid.major.y = element_line(color="grey90", size=0.2),
+    # legend.position    = "top"
+  ) 
+
+pdf("fig2a.pdf", width = 8.5, height = 6)  # inches
+fig2a
+dev.off()
+```
+
+
+# 2. coherence dot plots (Fig2 b-d, FigS1)
+```{r, include=FALSE}
+names(gene_dis_tables_list_v6)
+
+library(ggplot2)
+library(gridGraphics)
+library(gridExtra)
+
+coherent_plot <- function(gene_name) {
+  # gene_name = "oxc" 
+  print(gene_name)
+  gene_dis_tables <- gene_dis_tables_list_v6[[gene_name]]
+  
+  # select distance connections
+  selected_dis <- NULL
+  for(i in names(gene_dis_tables)) {
+    selected_dis <- rbind(selected_dis, gene_dis_tables[[i]])
+  }
+
+  selected_dis_i70 <- filter(selected_dis, Identity >70)
+
+  # Get the seq ID within each dataset
+  interpro_seq_name <- unique(gene_dis_tables[["interpro_self"]]$Query)
+  vritra_seq_name <- unique(gene_dis_tables[["vritra_self"]]$Query)
+
+  # Annotate Nodes
+  node_annotations <- data.frame(
+  name = c(interpro_seq_name, vritra_seq_name),
+  group = rep(c("InterPro", "Vritra"), c(length(interpro_seq_name),length(vritra_seq_name)))
+  )
+
+  # Create a graph from the edge list
+  g_cluster1 <- graph_from_data_frame(selected_dis_i70, vertices = node_annotations, directed = FALSE) 
+  g_cluster1_no_loops <- simplify(g_cluster1, remove.loops = TRUE, edge.attr.comb = "mean")
+
+  # Assign colors based on the group attribute 
+  # group_colors <- c("Vritra" = "#E64B35FF", "InterPro" = "#4DBBD5FF")
+  group_colors <- c("Vritra" = rgb(230, 75, 53, alpha = 150, maxColorValue = 255), "InterPro" = rgb(77, 187, 213, alpha = 150, maxColorValue = 255))
+  V(g_cluster1_no_loops)$color <- group_colors[V(g_cluster1_no_loops)$group]  
+  layout_k <- layout_with_kk(g_cluster1_no_loops) * 1.5
+
+  pdf(paste0(gene_name, "_coherence.pdf"), width = 6, height = 6)  # inches
+  
+  
+plot(g_cluster1_no_loops,
+     layout = layout_k,
+     edge.width = E(g_cluster1_no_loops)$Identity/50,  # Set edge width proportional to weight
+     vertex.size = 4,          # Node size
+     vertex.label.color = "black", # Node label color
+     # vertex.frame.color = NA, # No border around nodes
+     # vertex.color = "skyblue",  # Node color
+     vertex.label = NA,
+)
+title(main = bquote(italic(.(gene_name))), cex.main = 1.8)
+
+legend(
+  "topright",                                 # Position
+  legend = names(group_colors),              # Group names
+  col = group_colors,                        # Colors
+  pch = 21,                                  # Point symbol
+  pt.bg = group_colors,                      # Background of points
+  pt.cex = 1.3,                                # Point size
+  bty = "n",                                 # No box around legend
+  cex = 1.3 ,                                 # Text size
+   xpd = TRUE
+)
+
+dev.off()
+p1_recorded <- recordPlot()    # <-- Capture plot
+
+return(p1_recorded)
+
+}
+
+p_ssnA <- coherent_plot("ssnA")
+p_xdhA <- coherent_plot("xdhA")
+p_ygeW <- coherent_plot("ygeW")
+p_ygeX <- coherent_plot("ygeX")
+p_ygeY <- coherent_plot("ygeY")
+p_ygfK <- coherent_plot("ygfK")
+p_hyuA <- coherent_plot("hyuA")
+p_frc <- coherent_plot("frc")
+p_oxc <- coherent_plot("oxc")
+
+```
+
+
