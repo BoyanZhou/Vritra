@@ -9,3 +9,4 @@ import construct_database.uniref90_to_uniref100_taxon_ranks
 import construct_database.taxon_to_ranks
 import construct_database.seqid_from_fas
 import construct_database.uniprotkb_process
+import construct_database.pre_construct

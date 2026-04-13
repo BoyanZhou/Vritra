@@ -1,37 +1,6 @@
 import os
 from ete3 import NCBITaxa
 
-
-"""
-# metagenomic requires, then diamond v2.0.15.153 will be loaded automatically
-module add python/cpu/3.7.2
-# !!! but for this script, we must use python 3.6.5, because only under this python, ete3 is available 
-module add python/cpu/3.6.5
-
-"""
-
-###########################
-# Output of blastx result #
-###########################
-# Notice that: some have taxID, some do not. This taxID is from InterPro database, should be NCBI taxon ID
-"""
-# Fields: Query ID, Subject ID, Percentage of identical matches, Alignment length, Number of mismatches, Number of gap openings, Start of alignment in query,
-End of alignment in query, Start of alignment in subject, End of alignment in subject, Expected value, Bit score
-SRR5155786.36178        A0A0L6ZX88|unreviewed|D-phenylhydantoinase|taxID:562    100     33      0       0       1       99      358     390     1.76e-19    71.6
-SRR5155786.81704        A0A0H3EP60|unreviewed|D-phenylhydantoinase|taxID:685038 100     30      0       0       1       90      90      119     3.92e-19    70.5
-
-# DIAMOND v2.0.15. http://github.com/bbuchfink/diamond
-# Invocation: diamond blastx -d /gpfs/data/lilab/home/zhoub03/Uric_Acid_Lama/InterPro_7_genes/IPR050028-xdhAC_nonredundant.dmnd -p 8 -q /gpfs/data/lilab/home
-/zhoub03/Uric_Acid_Lama/datasets/USman/10042055/dna/SRR5155786.fastq -o /gpfs/data/lilab/home/zhoub03/Uric_Acid_Lama/USman_diamond_result/10042055/dna/SRR515
-5786_xdhAC_diamond.output --header --max-target-seqs 1
-# Fields: Query ID, Subject ID, Percentage of identical matches, Alignment length, Number of mismatches, Number of gap openings, Start of alignment in query,
- End of alignment in query, Start of alignment in subject, End of alignment in subject, Expected value, Bit score
-SRR5155786.9917 A0A2T5CF16|unreviewed|Aldehyde  62.1    29      11      0       14      100     639     667     1.52e-08        43.1
-SRR5155786.12584        A0A6N2R7Z8|unreviewed|Aldehyde  57.1    21      9       0       81      19      15      35      5.46e-05        32.7
-SRR5155786.17121        A0A5R9LIU7|unreviewed|Aldehyde  100     18      0       0       3       56      643     660     1.11e-08        43.5
-"""
-
-
 # function3: get taxon-id to taxon ranks
 def taxon_to_ranks(taxon_id, desired_ranks):
     """

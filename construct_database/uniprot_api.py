@@ -1,17 +1,5 @@
 import requests
 
-
-"""
-1. 给定uniref的ID，提取出其对应的另一个uniref的ID。例如，给定uniref90，提取出其每个id包含的uniref100
-
-# metagenomic requires, then diamond v2.0.15.153 will be loaded automatically
-module add python/cpu/3.7.2
-# !!! but for this script, we must use python 3.6.5, because only under this python, ete3 is available 
-module add python/cpu/3.6.5
-"""
-
-
-# 给定UniRef ID list， 返还full result dict
 def uniref_full_dict(input_uniref_id, in_uniref_type):
     """
     :param input_uniref_id: list of uniref id ["UniRef50_P40817" or "P40817", ...]
@@ -44,8 +32,6 @@ def uniref_full_dict(input_uniref_id, in_uniref_type):
         uniref_api_response_dict[response_name].append(id_temp)
     return uniref_full_dict, uniref_api_response_dict
 
-
-# 单个query的结果，主要被函数uniref_full_dict调用
 def uniref_id_query(uniref_id, out_format):
     """
     :param uniref_id="UniRef90_P40817"
@@ -80,7 +66,6 @@ def uniref_id_query(uniref_id, out_format):
         return None, response_name
 
 
-# 得到单个uniref100 的fasta文本序列
 def get_seq_by_uniref100(uniref100_id):
     """
     get the text sequence from a single uniref100_id
@@ -112,73 +97,3 @@ def get_seq_by_uniref100(uniref100_id):
             print(f"For {uniref100_id}, unexpected error: {response.status_code}")
             response_name = "unexpected error"
         return None, response_name
-
-
-"""
-# 根据UniRef100 ID, 下载单个蛋白质序列
-url = "https://rest.uniprot.org/uniref/UniRef100_A0A4S5C724.fasta"
-response = requests.get(url)
-response.text   # >UniRef100_A0A4S5C724 Diaminopropionate ammonia-lyase n=1 Tax=Aeromonas veronii TaxID=654 RepID=A0A4S5C724_AERVE\nMSQFSLKMDIADNRFFTGDPSPLFSR\n
-"""
-
-"""
-# Define the URL
-url = "https://rest.uniprot.org/uniref/UniRef50_P40817.json"
-
-# Send a GET request to the URL
-response = requests.get(url)
-
-# Check if the request was successful
-if response.status_code == 200:
-    # Parse the JSON response
-    data = response.json()
-    print(data)
-    data.keys() # dict_keys(['id', 'name', 'memberCount', 'updated', 'entryType', 'commonTaxon', 'seedId', 'goTerms', 'representativeMember', 'members'])
-    data["id"]  # 'UniRef50_P40817'
-    data["name"]    # 'Cluster: Diaminopropionate ammonia-lyase'
-    data["entryType"]   # 'UniRef50'
-    data["commonTaxon"] # {'scientificName': 'root', 'taxonId': 1}
-    data["goTerms"]     # [{'goId': 'GO:0016829', 'aspect': 'GO Molecular Function'}, {'goId': 'GO:0016020', 'aspect': 'GO Cellular Component'}]
-    data['representativeMember'] # {'memberIdType': 'UniProtKB ID',
- 'memberId': 'DPAL_SALTY',
- 'organismName': 'Salmonella typhimurium (strain LT2 / SGSC1412 / ATCC 700720)',
- 'organismTaxId': 99287,
- 'sequenceLength': 404,
- 'proteinName': 'Diaminopropionate ammonia-lyase',
- 'accessions': ['P40817'],
- 'uniref90Id': 'UniRef90_P40817',
- 'uniref100Id': 'UniRef100_P40817',
- 'uniparcId': 'UPI0000129737',
- 'sequence': {'value': 'MHELIKYQFNTRRKKYGTGAALSLLNGNVGHEVLAFHKKLPNYAVTPLHNLAHLSQRLGLGSIHIKDESWRFGLNAFKGLGGSYAVGKYLADKLQCDINSLSFAALNTPEIKEKIKDCVFVTATDGNHGRGVAWAAEQLGLKAVVYMPKGSSLIRAENIRHHGAECTITDLNYDDAVRLAHRMAQTKGWVLLQDTAWTGYEEIPTWIMQGYMTLAVEAYEQLAETNSPLPTHLILQAGVGSFAGSVMGYFVEKMQENIPNIIVVEPHQANCLYQSAVMDDGQPHCVTGDMATIMAGLACGEPNIISWPIIRDNTSCFISADDCLAAKGMRISAAPRPGTDTPFISGESGAIGVGLLYELMNNMHYQDLANRLQLDASAHVLLISTEGDTSPDIYEDIVWNGRSA',
-  'length': 404,
-  'molWeight': 44152,
-  'crc64': '9D605DFEAA691F00',
-  'md5': 'F31BA5E5BCDB09A5E08C4780C8CBF949'}}
-    
-    
-    data['members']     # [{'memberIdType': 'UniParc',
-  'memberId': 'UPI002180F047',
-  'organismName': 'Klebsiella pneumoniae',
-  'organismTaxId': 573,
-  'sequenceLength': 383,
-  'proteinName': 'diaminopropionate ammonia-lyase',
-  'uniref90Id': 'UniRef90_W9B689',
-  'uniref100Id': 'UniRef100_UPI002180F047'},
- {'memberIdType': 'UniParc',
-  'memberId': 'UPI00129D25AA',
-  'organismName': 'Klebsiella pneumoniae',
-  'organismTaxId': 573,
-  'sequenceLength': 383,
-  'proteinName': 'diaminopropionate ammonia-lyase',
-  'uniref90Id': 'UniRef90_W9B689',
-  'uniref100Id': 'UniRef100_UPI00129D25AA'}]
-
-    # Optionally save the JSON data to a file
-    with open("UniRef90_P40817.json", "w") as json_file:
-        json.dump(data, json_file, indent=4)
-
-    print("Data downloaded and saved successfully!")
-else:
-    print(f"Failed to retrieve data. Status code: {response.status_code}")
-"""
-

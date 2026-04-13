@@ -14,12 +14,7 @@ def uniprotkb_simplified(uniprotkb_fas_path, refined_species_fas_path, correspon
     :param uniprotkb_intermediate_dir:
     :return:
     """
-    """
-    'tr|A0A9D1HGB9|A0A9D1HGB9_9FIRM': SeqRecord(seq=Seq('MEIGRSRHRVDAWSKVTGEAKYTADLFPDNCLTAKVIRSTIANGRVLSMDTREA...
-    AYV'), id='tr|A0A9D1HGB9|A0A9D1HGB9_9FIRM', name='tr|A0A9D1HGB9|A0A9D1HGB9_9FIRM', 
-    description='tr|A0A9D1HGB9|A0A9D1HGB9_9FIRM Xanthine dehydrogenase molybdenum-binding subunit XdhA 
-    OS=Candidatus Onthocola gallistercoris OX=2840876 GN=xdhA PE=4 SV=1', dbxrefs=[])
-    """
+
     uniprotkb_seq_record_dict = SeqIO.to_dict(SeqIO.parse(uniprotkb_fas_path, "fasta"))
     # 1. extract taxon rank for each record to "uniprotkb_ranks_dict" and "species_uniref_id_dict"
     print(f"UniProtKB processing step1 ...")

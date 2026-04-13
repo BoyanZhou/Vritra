@@ -1,15 +1,4 @@
-"""
-此脚本用来从UniRef文件中提取所需要蛋白质序列，序列编号的来源是blast的结果文件的第二列
-module add diamond/0.9.18
-module add python/cpu/3.6.5
 
-get_seq_from_fas_given_id
-get_seq_from_fas_avoid_id
-
-get_prot_id_from_blast_res
-
-
-"""
 
 import os
 import re
@@ -227,36 +216,6 @@ def get_seq_id_from_fas(fas_path):
                 uniref_id = line.strip().split(" ")[0][1:]  # remove ">"
                 uniref_id_list.append(uniref_id)
     return uniref_id_list
-
-
-
-"""
-def get_blasted_prot_id_from_files(blasted_file_path_list):
-    total_blasted_prot = set()
-    for blasted_file_path in blasted_file_path_list:
-        blasted_prot_set = set()
-        with open(blasted_file_path, "r") as blasted_f:
-            for line in blasted_f:
-                blasted_prot_set.add(line.split("\t")[0])
-        # merge the prot from single file to the total set
-        total_blasted_prot = total_blasted_prot | blasted_prot_set
-    return total_blasted_prot
-
-    seq_record_dict = SeqIO.to_dict(SeqIO.parse(protein_fas_path, "fasta"))     # {seq_id: seq_record}
-    # SeqRecord(seq=Seq('MGDIMRPVPFKQLLCWIAEEYRSQWTIFGIPESQFFIKENGKSIQIFDESCATP...RPV', SingleLetterAlphabet()), id='X1ALD3|unreviewed|Selenate', name='X1ALD3|unreviewed|Selenate',
-    # description='X1ALD3|unreviewed|Selenate reductase subunit YgfK|taxID:412755', dbxrefs=[])
-    output_f = open(output_fas_path, "w")
-    pattern = r'taxID:(\d+)'
-    for seq_id, seq_record in seq_record_dict.items():
-        match = re.search(pattern, seq_record.description)
-        # Check if a match is found
-        if match:
-            # the seq matches the given taxID
-            if match.group(1) == taxID:
-                SeqIO.write(seq_record, output_f, "fasta")
-        else:
-            print(f"{seq_record.description} has no taxon ID")
-"""
 
 
 if __name__ == "__main__":
