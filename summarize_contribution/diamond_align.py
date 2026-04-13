@@ -1,7 +1,7 @@
 """
 module add python/cpu/3.7.2
 
-Script Name: build_diamond_db.py
+Script Name: diamond_align.py
 Author: Boyan Zhou
 Date: 2025-05-29
 Description: []
@@ -14,12 +14,14 @@ Function Overview:
     1. align_samples_by_diamond():
         - Purpose: per sample
         - Dependencies:
-
 """
 
 import os
 
 
+###################
+# Main Function 1 # For sample information from csv file
+###################
 def align_samples_from_csv(gene_prefix, sample_info_path, diamond_db_path, output_dir, thread, max_hit, id_thresh, query_cover, my_logger):
     # {sample: ["PATH/XXX_R1.fq", "PATH/XXX_R2.fq"]}
     sample_fq_dict = sample_fq_dict_from_csv(sample_info_path, my_logger)
@@ -43,6 +45,9 @@ def sample_fq_dict_from_csv(sample_info_path, my_logger):
     return sample_fq_dict
 
 
+###################
+# Main Function 2 # For sample information read from parameter directly
+###################
 def align_sample_by_diamond(gene_prefix, sample_id, fq_list, diamond_db_path, output_dir, thread, max_hit, id_thresh, query_cover, my_logger):
     """
     --log of diamond This will create a file named diamond.log in your current working directory

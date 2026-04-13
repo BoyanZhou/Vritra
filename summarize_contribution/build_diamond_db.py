@@ -23,8 +23,24 @@ from Bio import SeqIO
 # for mode build_diamond_db #
 #############################
 def build_diamond_database(gene_prefix, core_rep_uniref100_path, sponge_seq_path, uniprotkb_dir, output_dir, my_logger):
+    """
+    :param gene_prefix:
+    :param core_rep_uniref100_path:
+    :param sponge_seq_path:
+    :param uniprotkb_dir:
+    :param output_dir:
+    :param my_logger:
+    :return:
+    """
     if not os.path.exists(output_dir):
         os.system(f"mkdir -p {output_dir}")
+    # check whether finalized diamond database exists
+    finalized_dmnd_path = os.path.join(output_dir, f"{gene_prefix}_finalized_database_with_sponge.dmnd")
+    if os.path.exists(finalized_dmnd_path):
+        print(f"Stop building the diamond database: already exists in {finalized_dmnd_path}")
+        my_logger.info(f"Stop building the diamond database: already exists in {finalized_dmnd_path}")
+        return finalized_dmnd_path
+
     finalized_db_fas_path = os.path.join(output_dir, f"{gene_prefix}_finalized_database_no_sponge.fas")
     finalized_db_with_sponge_fas_path = os.path.join(output_dir, f"{gene_prefix}_finalized_database_with_sponge.fas")
     if uniprotkb_dir:
@@ -60,15 +76,20 @@ def build_diamond_database(gene_prefix, core_rep_uniref100_path, sponge_seq_path
     else:
         # if UniProtKB was not used
         my_logger.info(f"UniProtKB not used ... ...\n"
-                       f"cat {core_rep_uniref100_path} {sponge_seq_path} > {finalized_db_with_sponge_fas_path}")
+                       f"cat {core_rep_uniref100_path} {sponge_seq_path} > {finalized_db_with_sponge_fas_path}\n"
+                       f"cat {core_rep_uniref100_path} > {finalized_db_fas_path}")
+        os.system(f"cat {core_rep_uniref100_path} > {finalized_db_fas_path}")
         os.system(f"cat {core_rep_uniref100_path} {sponge_seq_path} > {finalized_db_with_sponge_fas_path}")
 
     # make diamond db
     os.chdir(output_dir)
-    mk_db_command = f"diamond makedb --in {finalized_db_with_sponge_fas_path} " \
-                    f"-d {gene_prefix}_finalized_database_with_sponge"
+    mk_db_command = f"diamond makedb --in {finalized_db_with_sponge_fas_path} -d {gene_prefix}_finalized_database_with_sponge"
+    mk_db_command2 = f"diamond makedb --in {finalized_db_fas_path} -d {gene_prefix}_finalized_database_no_sponge"
     my_logger.info(mk_db_command)
+    my_logger.info(mk_db_command2)
     os.system(mk_db_command)
+    os.system(mk_db_command2)
+    return finalized_dmnd_path
 
 
 def output_fas_given_seq(seq_id_set, original_fas_path, extracted_fas_path, reverse=False):
