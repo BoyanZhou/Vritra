@@ -1,10 +1,5 @@
 """
 Refine the constructed core UniRef90s database according to self domain knowledge, provided in txt file
-
-module add diamond/0.9.18
-module add python/cpu/3.6.5
-
-
 """
 
 import os
@@ -14,9 +9,6 @@ from Bio import SeqIO
 import log_setup
 import argparse
 
-# import get_seq_by_id_from_uniref as gsbifu
-# import detect_community as detect_com
-# import download_uniref100_from_uniref90 as download_100_from_90
 
 
 def filter_fas_by_len(original_fas_path, extracted_fas_path, logger, len_upper=0.25, len_lower=0.25, by_sd=False):

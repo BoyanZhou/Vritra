@@ -1,5 +1,3 @@
-
-
 # 🐍 Vritra
 
 **A Scalable Pipeline for Functional Gene Detection and Species Attribution from Metagenomic and Metatranscriptomic Data**
@@ -10,9 +8,8 @@
 
 **Vritra** is a lightweight and scalable pipeline designed for:
 
-* Functional gene detection
-* Species-level attribution
-* Integration of metagenomic and metatranscriptomic data
+* Construction of gene-specific mini protein sequence database
+* Species-level attribution of sequencing reads from metagenomic or metatranscriptomic data
 
 This repository contains the implementation used in the paper:
 
@@ -22,40 +19,29 @@ This repository contains the implementation used in the paper:
 
 ## ⚙️ Requirements
 
-### 🔧 External Tools
+### 🔧 Software
 
-Please install the following tools before running Vritra:
-
-* **DIAMOND2** (tested with v2.0.15)
-  [https://github.com/bbuchfink/diamond](https://github.com/bbuchfink/diamond)
-* **Kraken2**
-* **Bowtie2**
-* **samtools**
-
-**Note:** Make sure all tools are added to your PATH environment variable.
+1. **DIAMOND2** (tested with v2.0.15)  
+   https://github.com/bbuchfink/diamond  
 
 ---
 
 ### 🐍 Python Environment
 
-Vritra was developed and tested with:
+Tested on **Python 3.6.5**
 
-* Python **3.6.5**
+| Package | Version |
+|--------|--------|
+| numpy  | 1.19.5 |
+| pandas | 1.1.5 |
+| Bio    | 1.79   |
+| ete3   | 3.1.2  |
 
-Required Python packages:
+---
 
-```
-pip install numpy pandas biopython ete3
-```
-
-| Package   | Tested Version            |
-| --------- | ------------------------- |
-| numpy     | 1.19.5                    |
-| pandas    | 1.1.5                     |
-| biopython | latest stable recommended |
-| ete3      | latest stable recommended |
-
-**Tip:** If you encounter compatibility issues, consider recreating this environment.
+> ⚠️ **Important**
+> - Make sure **DIAMOND2 is added to your PATH**
+> - We strongly recommend using a controlled environment (e.g., conda)
 
 ---
 
@@ -72,7 +58,7 @@ No additional compilation is required.
 
 ## ▶️ Usage
 
-Detailed documentation and examples are available in the Wiki:
+Detailed tutorials and examples are available in the Wiki:
 
 [https://github.com/BoyanZhou/Vritra/wiki](https://github.com/BoyanZhou/Vritra/wiki)
 
@@ -89,7 +75,6 @@ For questions, bug reports, or suggestions:
 ## 🧩 Notes
 
 * Designed for scalability on large sequencing datasets
-* Compatible with both metagenomic and metatranscriptomic workflows
 * Minimal dependencies for easier deployment
 
 ---
@@ -98,4 +83,5 @@ For questions, bug reports, or suggestions:
 
 If you find this tool useful, please consider citing:
 
-[Add your paper citation here]
+[]
+

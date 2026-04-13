@@ -1,31 +1,10 @@
-"""
-给定一个种子fas文件，从一个较大的seq subset（the complete UniRef90 data set）中 blastp
-找到和种子序列similarity相近的所有序列。再给定一个pre-labeled的sequence数据集合，通过我们自己的
-算法从上面的集合中找到所有应该被重新标记为目标功能的序列（new-labeled）
-下载pre-labeled和new-labeled sequences所对应的UniRef100
-
-
-module add diamond/0.9.18
-module add python/cpu/3.6.5
-
-class GeneBlast: main class Given a gene name and seed sequence, build data set
-    ----build_initial_uniref_local: blast seed sequence to get initial seq set
-"""
-
 import os
-
 import sys
 import pandas as pd
 from Bio import SeqIO
 import log_setup
 import argparse
-# import make_UniRefDB as make_uniref_db
-# import make_CompleteDB as make_comDB
-
 import construct_database
-# import get_seq_by_id_from_uniref as gsbifu
-# import detect_community as detect_com
-# import download_uniref100_from_uniref90 as download_100_from_90
 
 
 class GeneBlast:
@@ -49,13 +28,7 @@ class GeneBlast:
         self.initial_blast_res_path = ""
         self.initial_blast_prot_id = []
         self.initial_blast_prot_length_dict = {}        # {"UniRef90_UPI000FDD77E9": 398}
-        """
-        self.first_query_seq_id = []
-        self.first_query_seq_fas_path = ""              # PATH/new_sequences_iteration_0.fas
 
-        self.iteration_final_dir = os.path.join(self.total_dir, f"{self.output_prefix}_blast_iteration_final_set")
-        self.target_uniref90_list = []
-        """
         self.uniprotkb_incorporated_seq_path = ""   # if labeled seq in UniProtKB is provided
         self.labeled_to_uniref90_blast_res_path = ""
         self.labeled_connected_to_uniref90_blast_res_path = ""
@@ -122,9 +95,7 @@ class GeneBlast:
             self.logger.info(f"Made initial blastdb {os.path.join(self.initial_blast_dir, initial_seq_set)}")
         self.initial_blasted_seq_path = os.path.join(self.initial_blast_dir, initial_seq_set)
 
-    # build the refined database by PSI_BLAST (之后需要改成原先使用的iterative search)
     def psi_blast_label_new_seq(self, new_labeled_seq_func_summary_path, new_labeled_seq_fas_path):
-        psi_blast_command = ""
         pass
 
     def incorporate_uniprotkb(self, uniprotkb_fas_path):
@@ -245,7 +216,6 @@ class GeneBlast:
                                                      f"{self.output_prefix}_refined_labeled_filtered_seqs.fas")
         if not os.path.exists(self.refined_labeled_seq_path):
             output_fas_given_seq(labeled_seq_set, self.labeled_seq_path, self.refined_labeled_seq_path)
-        # 反过来通过 labeled_seq_set 优化 labeled_to_uniref90_blast_res (先暂时不加)
         # labeled_to_uniref90_blast_res = labeled_to_uniref90_blast_res.loc[labeled_to_uniref90_blast_res.iloc[:, 0] in labeled_seq_set, ]
 
         # 1.2 quasi: the seqs very close to original labeled seqs (default >80%), but not the same ID as labeled
@@ -329,26 +299,7 @@ class GeneBlast:
         if not os.path.exists(labeled_t1_t2_merged_seq_path):
             os.system(f"cat {self.refined_labeled_seq_path} {self.quasi_labeled_seq_path} {self.unlabeled_seq_path} > {labeled_t1_t2_merged_seq_path}")
         self.logger.info(f"Merge original labeled and t1_t2_merged_only_seq (labeled excluded) to {labeled_t1_t2_merged_seq_path}")
-        """
-        # make blast db
-        if os.path.exists(f"{labeled_t1_t2_merged_seq_path}.pdb"):
-            self.logger.info(f"The initial protein database existed in {labeled_t1_t2_merged_seq_path}. Skip making initial blastdb!")
-        else:
-            os.system(f"makeblastdb -in {labeled_t1_t2_merged_seq_path} -dbtype prot -parse_seqids")
-            self.logger.info(f"Made all merged blastdb {labeled_t1_t2_merged_seq_path}")
-        # blast to it self
-        labeled_and_t1_t2_blast_res_path = os.path.join(self.total_dir, "2_dataset_construction_by_annotated_seqs",
-            f"{self.output_prefix}_labeled_connected_and_its_connected_and_labeled_seq_to_self_blasted_res_alignments{num_alignments*2}.txt")
-        self.labeled_and_t1_t2_blast_res_path = labeled_and_t1_t2_blast_res_path
-        blast_command = f"blastp -query {labeled_t1_t2_merged_seq_path} -db {labeled_t1_t2_merged_seq_path} -outfmt 6 " \
-                        f"-num_alignments {num_alignments*2} > {labeled_and_t1_t2_blast_res_path}"
-        if os.path.exists(labeled_and_t1_t2_blast_res_path):
-            self.logger.info(f"Blast all merged to itself results existed! Skip this step.")
-        else:
-            self.logger.info(f"Blast all merged to itself ...\n{blast_command}")
-            os.system(blast_command)
-            self.logger.info(f"Blast all merged to itself End.")
-        """
+
     def label_new_seq(self, new_labeled_seq_func_summary_path, new_labeled_seq_fas_path, db_name, connection_iden_threshold):
         """
         :param new_labeled_seq_func_summary_path:
@@ -472,9 +423,19 @@ def filter_fas_by_len(original_fas_path, extracted_fas_path, logger, len_upper=0
     logger.info(f"The filtered sequences are stored in {extracted_fas_path}")
 
 
-############################
-# Main function of model 1 #
-############################
+#########################################
+# Main function of model: pre_construct #
+#########################################
+def pre_construct_step(blast_download_folder, uniref90_download_folder, logger_path, blast_version="2.16.0"):
+    logger = log_setup.setup_log_file(logger_path)
+    blast_bin_path = construct_database.pre_construct.download_blast(blast_download_folder, logger, blast_version)
+    if blast_bin_path:
+        construct_database.pre_construct.download_build_uniref90(blast_bin_path, uniref90_download_folder, logger)
+
+
+##########################################
+# Main function of model: annotated_seqs #
+##########################################
 def construct_by_annotated_seqs(gene_prefix, seed_fas_path, seed_type, gene_total_output_dir, labeled_seq_path,
                                 # labeled_prefix,
                                 labeled_seq_uniprotkb_path,
@@ -508,11 +469,8 @@ def construct_by_annotated_seqs(gene_prefix, seed_fas_path, seed_type, gene_tota
     gene_blast.label_new_seq(New_labeled_seq_func_summary_path, New_labeled_seq_fas_path, db_name, search_thresh)
 
 
-
-####################################################################
-# 下面这个暂时还没改可能最后不用PSI-blast,改回先前的iterative search #
-####################################################################
-def construct_by_psi_blast(gene_prefix, seed_fas_path, seed_type, gene_total_output_dir, labeled_seq_path, labeled_prefix, uniref_path, num_align, logger_path):
+def construct_by_iterative_search(gene_prefix, seed_fas_path, seed_type, gene_total_output_dir, labeled_seq_path,
+                                  labeled_prefix, uniref_path, num_align, logger_path):
     logger = log_setup.setup_log_file(logger_path)
     # 1. initialize
     # blast_bin_path = "/gpfs/data/lilab/home/zhoub03/software/blast/ncbi-blast-2.16.0+/bin"
@@ -533,10 +491,6 @@ def construct_by_psi_blast(gene_prefix, seed_fas_path, seed_type, gene_total_out
     # New_labeled_seq_fas_path = "/gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/P19409_baiB_202502/dataset_construction/baiB_new_labeled_seq.fas"
     New_labeled_seq_func_summary_path = os.path.join(gene_total_output_dir, "2_dataset_construction_by_annotated_seqs", f"{gene_prefix}_{labeled_prefix}_pre_labeled_and_new_labeled_func_summary.txt")
     New_labeled_seq_fas_path = os.path.join(gene_total_output_dir, "2_dataset_construction_by_annotated_seqs", f"{gene_prefix}_{labeled_prefix}_new_labeled_seq.fas")
-    # gene_blast.label_new_seq(New_labeled_seq_func_summary_path, New_labeled_seq_fas_path, db_name, )
-
-    # 6. Download the corresponding UniRef100 of UniRef90; & generate correspondence between UniRef100 and taxonomy
-    # 这部分挪到了后面recluster的程序中运行
 
 
 def get_args():
@@ -544,42 +498,54 @@ def get_args():
 
     # Define parent parser for shared arguments
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument("-g", "--gene-prefix", type=str, required=True, help="Prefix for gene files")
-    parent_parser.add_argument("-s", "--seed-fas-path", type=str, required=True, help="Path to the seed FASTA file")
-    parent_parser.add_argument("-t", "--seed-type", type=str, required=True, choices=['prot', 'nucl'], default='prot',
+    parent_parser.add_argument("-g", "--gene-prefix", type=str, required=False, help="Prefix for gene files")
+    parent_parser.add_argument("-s", "--seed-fas", type=str, required=False, help="Path to the seed FASTA file")
+    parent_parser.add_argument("-t", "--seed-type", type=str, required=False, choices=['prot', 'nucl'], default='prot',
                                help="Type of the seed")
-    parent_parser.add_argument("-o", "--gene-total-output-dir", type=str, required=True,
+    parent_parser.add_argument("-o", "--output-dir", type=str, required=False,
                                help="Directory of total output for this gene")
-    parent_parser.add_argument("-b", "--blast-bin-dir", type=str, required=True,
+    parent_parser.add_argument("-b", "--blast-bin", type=str, required=False,
                                help="The directory path of bin of downloaded ncbi-blast. Specify this parameter if "
                                      "ncbi-blast has not been added to the environment.")
     parent_parser.add_argument("-L", "--logger-path", type=str, required=True, help="Path to save log files")
 
     # Main parser
-    parser = argparse.ArgumentParser(description="Construct sequence database from seed seq using Annotated Seqs or PSI-BLAST.")
+    parser = argparse.ArgumentParser(description="Construct sequence database from seed seq using Annotated Seqs")
     subparsers = parser.add_subparsers(dest="mode", help="Mode of operation")
 
-    # Subparser for 'pre_construct' mode (shared + specific args)
+    ###############################################################
+    # Subparser for 'pre_construct' mode (shared + specific args) #
+    ###############################################################
+    parser_pre = subparsers.add_parser("pre_construct", parents=[parent_parser],
+                                             help="Downloading of required blast tool and UniRef90 before processing")
+    parser_pre.add_argument("--blast-download-folder", type=str, required=True,
+                            help="The folder where the NCBI blast tool is downloaded.")
+    parser_pre.add_argument("--blast-version", type=str, default="2.16.0",
+                            help="BLAST version to download (e.g., 2.16.0)\n"
+                                 "You can check the available version here:\n"
+                                 "https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/")
+    parser_pre.add_argument("--uniref90-download-folder", type=str, required=True,
+                            help="The folder where the full UniRef90 database is downloaded.")
 
-    "--download-uniref90"
-
-    # Subparser for 'annotated_seqs' mode (shared + specific args)
-    parser_annotated = subparsers.add_parser("annotated_seqs", parents=[parent_parser],
+    ################################################################
+    # Subparser for 'annotated_seqs' mode (shared + specific args) #
+    ################################################################
+    parser_ann = subparsers.add_parser("annotated_seqs", parents=[parent_parser],
                                          help="Run in annotated sequence mode")
-    parser_annotated.add_argument("-l", "--annotated-seq-path", type=str, required=True, help="Path to annotated sequence file")
-    # parser_annotated.add_argument("-p", "--annotated-prefix", type=str, required=True, help="Prefix for annotated sequences")
-    parser_annotated.add_argument("-d", "--annotated-database", type=str, required=True, choices=['uniprot', 'interpro'],
-                               help="The name of the database where the annotated seqs are from.")
-    parser_annotated.add_argument("-u", "--uniref90-db", type=str, required=True, help="Path to the UniRef90 database")
-    parser_annotated.add_argument("--annotated-uniprotkb-path", type=str,
-                                  help="Path to annotated sequence file from UniProtKB (Optional).")
-    parser_annotated.add_argument("-q", "--quasi-threshold", type=float, default=80, help='Threshold value of quasi labeled seqs (default: 80)')
-    parser_annotated.add_argument("-r", "--search-threshold", type=float, default=50, help="Threshold value of searching range (default: 50)")
-    parser_annotated.add_argument("--seed-align-number", type=int, default=15000, help="Number of alignments by seed seq (default: 15000)")
+    parser_ann.add_argument("-d", "--annotated-database", type=str, required=False, choices=['uniprot', 'interpro'],
+                            default="uniprot", help="The name of the database where the annotated seqs are from.")
+    parser_ann.add_argument("-u", "--uniref90-db", type=str, required=False, help="Path to the UniRef90 database")
+    parser_ann.add_argument("--annotated-uniref-path", type=str, required=False, help="Path to annotated sequence file")
+    parser_ann.add_argument("--annotated-uniprotkb-path", type=str, required=False, help="Path to annotated sequence file from UniProtKB (Optional).")
+    parser_ann.add_argument("-q", "--quasi-threshold", type=float, default=80, help='Threshold value of quasi labeled seqs (default: 80)')
+    parser_ann.add_argument("-r", "--search-threshold", type=float, default=50, help="Threshold value of searching range (default: 50)")
+    parser_ann.add_argument("--seed-align-number", type=int, default=15000, help="Number of alignments by seed seq (default: 15000)")
 
-    # Subparser for 'psi_blast' mode (only shared args)
-    parser_psi = subparsers.add_parser("psi_blast", parents=[parent_parser], help="Run in PSI-BLAST mode")
-    parser_psi.add_argument("-e", "--e_value", type=float, default=1e-3, help="E-value threshold for PSI-BLAST search (default: 1e-3)")
+    ############################################################
+    # Subparser for 'iterative_search' mode (only shared args) #
+    ############################################################
+    parser_iter = subparsers.add_parser("iterative_search", parents=[parent_parser], help="Run in iterative_search mode")
+    parser_iter.add_argument("-e", "--e_value", type=float, default=1e-3, help="E-value threshold for PSI-BLAST search (default: 1e-3)")
     args1 = parser.parse_args()
     if args1.mode is None:
         parser.error("A subcommand is required. Use -h for help.")
@@ -588,32 +554,38 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
+    if args.mode == "pre_construct":
+        """
+        python construct_database.py
+        annotated_seqs
+        --blast-download-folder XXX/Blast
+        --uniref90-download-folder XXX/UniRef90_db
+        --blast-version 2.16.0
+        """
+        pre_construct_step(args.blast_download_folder, args.uniref90_download_folder, args.logger_path,
+                           args.blast_version)
     if args.mode == "annotated_seqs":
         """
-        python construct_database.py annotated_seqs -g ygeX -s /gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/P66899_ygeX_202502/P66899_ygeX.fas 
-        -t prot -o /gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/P66899_ygeX_202502 -b /gpfs/data/lilab/home/zhoub03/software/blast/ncbi-blast-2.16.0+/bin
-        -l /gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/P66899_ygeX_202502/uniref_Diaminopropionate_ammonia_lya_2025_02_19.fasta 
-        -p search_C -L /gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/P66899_ygeX_202502/YGEX_search_C_contruct_database_0219.log
+        python construct_database.py
+        annotated_seqs 
+        -g ${gene} 
+        -s ${seed_path} 
+        -t prot 
+        -o ${parent_folder}/${gene}_2507 
+        -b /gpfs/data/lilab/home/zhoub03/software/blast/ncbi-blast-2.16.0+/bin 
+        -l ${parent_folder}/${gene}_uniref_annotated.fasta 
+        -d uniprot 
+        -u ${uniref90_db} 
+        --annotated-uniprotkb-path ${parent_folder}/${gene}_uniprotkb_annotated.fasta 
+        -L ${parent_folder}/${gene}_2507/${gene}_construct_database_${date}.log
         """
-        if args.blast_bin_dir not in os.environ["PATH"]:
+        if args.blast_bin not in os.environ["PATH"]:
             # blast_bin_path = "/gpfs/data/lilab/home/zhoub03/software/blast/ncbi-blast-2.16.0+/bin"
-            os.environ["PATH"] = os.environ["PATH"] + ":" + args.blast_bin_dir
-        construct_by_annotated_seqs(args.gene_prefix, args.seed_fas_path, args.seed_type, args.gene_total_output_dir,
+            os.environ["PATH"] = os.environ["PATH"] + ":" + args.blast_bin
+        construct_by_annotated_seqs(args.gene_prefix, args.seed_fas, args.seed_type, args.output_dir,
                                     args.annotated_seq_path,
                                     args.annotated_uniprotkb_path, args.annotated_database,
                                     args.quasi_threshold, args.search_threshold, args.uniref90_db,
                                     args.seed_align_number, args.logger_path)
-    elif args.mode == "psi_blast":
+    elif args.mode == "iterative_search":
         pass
-
-    # Example of how the parameters can be used
-    print(f"Gene Prefix: {args.gene_prefix}")
-    print(f"Seed FASTA Path: {args.seed_fas_path}")
-    print(f"Seed Type: {args.seed_type}")
-    print(f"Gene Total Output Directory: {args.gene_total_output_dir}")
-    # print(f"Labeled Sequence Path: {args.labeled_seq_path}")
-    # print(f"Labeled Prefix: {args.labeled_prefix}")
-    print(f"Logger Path: {args.logger_path}")
-    print("End of construct_procedure.")
-
-

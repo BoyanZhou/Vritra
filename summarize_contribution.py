@@ -1,17 +1,3 @@
-"""
-# metagenomic requires, then diamond v2.0.15.153 will be loaded automatically
-module add python/cpu/3.7.2
-
-#!/bin/bash
-#SBATCH --partition=cpu_medium
-#SBATCH --job-name=kraken_boyan
-#SBATCH --mem-per-cpu=5G
-#SBATCH --time=72:00:00
-#SBATCH --tasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --nodes=1
-"""
-
 import os
 import json
 import pandas as pd
@@ -19,101 +5,6 @@ import subprocess
 import log_setup
 import argparse
 import summarize_contribution
-
-
-# main function
-def diamond_summarize(gene_name, core_uniref100_fas_path, seq_taxonomy_mapping_csv_path, sample_info_dict,
-                      output_folder, summary_folder, read_count_report_path, logger):
-    diamond_summary = summarize_contribution.diamond_summarize.DiamondSum(gene_name, core_uniref100_fas_path, seq_taxonomy_mapping_csv_path, sample_info_dict, output_folder, logger)
-    # diamond_summary.diamond_align(thread=4, max_target=5, whether_overwrite=False)
-    diamond_summary.diamond_result_summary(read_count_report_path, summary_folder, identical_percent_threshold=70, matched_length_threshold=25)
-
-
-
-# deprecated now
-def build_dict_from_seq_taxonomy_mapping(mapping_csv_path):
-    """
-    :param mapping_csv_path = "FRC_core_uniref100_correspondence.csv"
-    :return:
-    """
-    seq_taxonomy_df = pd.read_csv(mapping_csv_path)
-    # seq_taxonomy_df.columns
-    # ['UniRef90_ID','UniRef100_ID','Protein_length','Taxon_ID','Taxon_ranks','superkingdom','phylum','class',
-    #  'order','family','genus','species','rep_species','rep_species_summary','represented_uniref100',
-    #  'corresponding_uniref90', 'corresponding_species']
-    pass
-
-
-def count_reads_shell(fastq_path):
-    # fastq_path = "path/example_R1.fq.gz"
-    if fastq_path.endswith(".gz"):
-        cmd = f"zcat {fastq_path} | wc -l"
-    else:
-        cmd = f"cat {fastq_path} | wc -l"
-    # result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                        universal_newlines=True)
-    line_count = int(result.stdout.strip())
-    read_count = int(line_count/4)  # Each read has 4 lines
-    return read_count
-
-
-def blastx_to_taxon_count_unipro(blastx_output_path, identical_percent_threshold=70, matched_length_threshold=25):
-    """
-    This is for the results of diamond using UniPro database (not InterPro)
-    For each unique read, only count the first record
-    :param blastx_output_path:
-    :param identical_percent_threshold: threshold of identical aa percent, default 70
-    :param matched_length_threshold: the aa length >= 25 (that is >=75 in bp)
-    :return: reads count dict of each UniRef, {"UniRef100_A0A2D6BS33": 10, "UniRef100_UPI000C7BF04C": 16}
-    """
-    # 1. read the unique protein id that the read mapped to, like "A0A6N2R7Z8"; get the count of each id appeared
-    protein_count_dict = {}     # {"UniRef100_": 35, ...}
-    last_read_id = ""
-    with open(blastx_output_path, "r") as blastx_f:
-        for line in blastx_f:
-            if line.startswith("#"):
-                continue
-            cols = line.split("\t")
-            # if the read has been recorded, skip other records (only the best hit will be recorded)
-            if cols[0] == last_read_id:
-                continue
-            last_read_id = cols[0]
-            protein_id = cols[1]  # like "UniRef100_UPI002DDAB8EB"
-            identical_percent = float(cols[2])
-            aligned_length = int(cols[3])
-            # only consider the sequences passing the threshold
-            if identical_percent < identical_percent_threshold:
-                continue
-            if aligned_length < matched_length_threshold:
-                continue
-            if protein_id in protein_count_dict:
-                protein_count_dict[protein_id] += 1
-            else:
-                protein_count_dict.update({protein_id: 1})
-    return protein_count_dict
-
-
-#################################
-# read uniref taxonomy csv file #
-#################################
-# not used in this
-def read_my_csv(csv_path):
-    table_by_list = []
-    ncol = -1
-    col_name = []
-    with open(csv_path) as csv_f:
-        for line in csv_f:
-            cols = line.strip().split(",")
-            if ncol < 0:
-                ncol = len(cols)
-            if len(col_name) == 0:
-                col_name = cols
-                continue
-            if len(cols) == ncol:
-                table_by_list.append(cols)
-    data_df = pd.DataFrame(table_by_list, columns=col_name)
-    return data_df
 
 
 def get_args():
@@ -128,8 +19,9 @@ def get_args():
     # Main parser
     parser = argparse.ArgumentParser(description="Build diamond_db, align sequence by diamond, and summarize.")
     subparsers = parser.add_subparsers(dest="mode", help="Mode of operation")
-
-    # Subparser for build 'diamond_db' mode
+    #########################################
+    # Subparser for build 'diamond_db' mode #
+    #########################################
     parser_diamond = subparsers.add_parser("build_diamond_db", parents=[parent_parser],
                                            help="Build the diamond database for target gene "
                                                 "by core Uniref100 and sponge sequences.")
@@ -141,19 +33,20 @@ def get_args():
                                      "generated by 'refine_core_UniRef90s.py'.")
     parser_diamond.add_argument("--uniprotkb-dir", type=str,
                                 help="Path to the directory of UniProtKB generated by 'construct_database.py'.")
-
-    # Subparser for 'align' sequence by diamond mode
+    ##################################################
+    # Subparser for 'align' sequence by diamond mode #
+    ##################################################
     parser_align = subparsers.add_parser("align", parents=[parent_parser],
                                          help="Align raw sequence to finalized database by "
                                               "'build_diamond_db' in last step.")
     parser_align.add_argument("-d", "--diamond-db", type=str, required=True,
                               help="Path to the diamond database (.dmnd) built in last step by 'build_diamond_db'")
-    parser_align.add_argument("-t", "--sample-table", type=str,
+    parser_align.add_argument("--sample-fastq", type=str,
                               help="For multiple samples: not used together with --sample, --fastq \n"
                                    "Path to the csv table (separated by ',') containing sample information. "
-                                    "The first column is the sample ID and the second column is the path to fq or "
-                                    "fq.gz. For paired-end sample, the path to R1 and the path to R2 should be "
-                                    "separated by ':' within the second column (PATH/XXX_R1.fq:PATH/XXX_R2.fq).")
+                                   "The first column is the sample ID and the second column is the path to fq or "
+                                   "fq.gz. For paired-end sample, the path to R1 and the path to R2 should be "
+                                   "separated by ':' within the second column (PATH/XXX_R1.fq:PATH/XXX_R2.fq).")
     parser_align.add_argument("--sample", type=str, help="For single sample, sample ID.")
     parser_align.add_argument("--fastq", type=str,
                               help="For single sample, path to the fq or fq.gz. \n"
@@ -165,23 +58,38 @@ def get_args():
                               help="Threshold of alignment identity (0~100).")
     parser_align.add_argument("--query-coverage", type=int, default=85,
                               help="Threshold of query covered percentage (0~100).")
-
-    # Subparser for 'summarize' sequence by diamond mode
+    ######################################################
+    # Subparser for 'summarize' sequence by diamond mode #
+    ######################################################
     parser_summarize = subparsers.add_parser("summarize", parents=[parent_parser],
-                                             help="Align raw sequence to finalized database by "
-                                                  "'build_diamond_db' in last step.")
-    parser_summarize.add_argument("-t", "--sample-table", type=str, required=True,
-                                  help="Path to the csv table (separated by ',') containing sample information. "
-                                       "You can just used the same paramenter in last step ('align' -t). "
-                                       "Or any csv file with the first column being the sample ID that matches the "
-                                       "sample ID in last step ('align').")
-    parser_summarize.add_argument("-f", "--uniref100-fas-path", type=str, required=True,
-                                  help="Path to the FASTA file of UniRef100, generated by mode 'uniref90_to_100'")
+                                             help="Summarize the count/RPKM/CPM data from diamond reports.")
+    parser_summarize.add_argument("--read-count", type=str, required=True,
+                                  help="Filename of reads count file for fastq. For example, the name of the "
+                                       "dataset + sequencing type (XXX_study_MGX_read_count.tsv).")
+    parser_summarize.add_argument("--sample-fastq", type=str, required=True,
+                                  help="For multiple samples: not used together with --sample, --fastq \n"
+                                  "Path to the csv table (separated by ',') containing sample information. "
+                                  "The first column is the sample ID and the second column is the path to fq or "
+                                  "fq.gz. For paired-end sample, the path to R1 and the path to R2 should be "
+                                  "separated by ':' within the second column (PATH/XXX_R1.fq:PATH/XXX_R2.fq).")
 
+    parser_summarize.add_argument("--sample-diamond", type=str, required=True,
+                                  help="Path to the csv table (separated by ',') containing sample and corresponding "
+                                       "diamond report. The first column is the sample ID and the second column is "
+                                       "the path to its corresponding diamond report. For paired-end sample, "
+                                       "the path to R1 report and the path to R2 report should be separated by ':' "
+                                       "within the second column (PATH/XXX_R1_diamond.output:PATH/XXX_R2_diamond."
+                                       "output).")
+    parser_summarize.add_argument("--tax-mapping", type=str, required=True,
+                                  help="Path to the csv file of correspondence between taxonomy and finalized uniref100.")
+    parser_summarize.add_argument("--identity-threshold", type=int, default=70,
+                              help="Threshold of alignment identity (0~100).")
+    parser_summarize.add_argument("--len-threshold", type=int, default=30,
+                              help="Threshold of length of aligned amino acids threshold.")
     args1 = parser.parse_args()
 
     if args1.mode is None:
-        parser.error("A subcommand is required. Use -h for help.")
+        parser.error("A sub-command is required. Use -h for help.")
     return args1
 
 
@@ -206,13 +114,14 @@ if __name__ == "__main__":
                                                                        args.sponge_fas_path, args.uniprotkb_dir,
                                                                        args.output_dir, logger)
 
-
     elif args.mode == "align":
+        # two format indicate the sample ID and fastq file (by sample_table or by parameter input)
         if args.sample_table is not None:
             """
-            Example: Provide sample-ID and path to fastq in a table file, batch processing 
+            Example: Provide sample-ID and path to fastq in a csv file, batch processing 
+            sample1_ID,PATH/XXX_R1.fq:PATH/XXX_R2.fq
             """
-            summarize_contribution.diamond_align.align_samples_from_csv(args.gene_prefix, args.sample_table,
+            summarize_contribution.diamond_align.align_samples_from_csv(args.gene_prefix, args.sample_fastq,
                                                                         args.diamond_db, args.output_dir, args.thread,
                                                                         args.max_hit, args.identity_threshold,
                                                                         args.query_coverage, logger)
@@ -236,8 +145,30 @@ if __name__ == "__main__":
             print(f"Error! sample information is missing. Use -t or or '--sample and --fastq'")
 
     elif args.mode == "summarize":
-
-        pass
-        # diamond_summarize(args.gene_name, args.core_uniref100_fas_path, args.uniref_taxonomy_path, sample_info_dict, args.output_folder, args.summary_folder, read_count_report_path, logger)
-
+        """
+        Example: Summarize diamond report to count/CPM/RPKM
+        
+        vritra_dir = "/gpfs/data/lilab/home/zhoub03/Liisa_Beta_glucuronidase/Vritra_v2_20260319"
+        output_folder = "/gpfs/data/lilab/home/zhoub03/Lama_oxalate/precision_medicine/processed_data/oxalate_gene_summary_improved_report_2602"
+        frc_database_path = "/gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/oxalate_gene_set_0729/FRC_2507/4_finalized_database/FRC_finalized_corres
+pondence.csv"
+        oxc_database_path = "/gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/oxalate_gene_set_0729/OXC_2507/4_finalized_database/OXC_finalized_corres
+pondence.csv"
+        read_count_filename = "precision_medicine_MGX_read_count.tsv"
+    dna_frc_summarize = f"python {os.path.join(vritra_dir, 'summarize_contribution.py')} " \
+                        f"summarize " \
+                        f"-g FRC " \
+                        f"--read-count {read_count_filename} " \
+                        f"--sample-fastq {os.path.join(output_folder, 'dna_sample_fq.csv')} " \
+                        f"--sample-diamond {os.path.join(output_folder, 'dna_sample_diamond_FRC.csv')} " \
+                        f"--tax-mapping {frc_database_path} " \
+                        f"-o {output_folder} " \
+                        f"-L dna_sample_vritra_summarize_frc_260324.log " \
+                        f"--identity-threshold 80 " \
+                        f"--len-threshold 45"
+        """
+        summarize_contribution.diamond_summarize.summarize_diamond_report(args.gene_prefix, args.read_count,
+                                                                          args.sample_fastq, args.sample_diamond,
+                                                                          args.tax_mapping, args.output_dir, logger,
+                                                                          args.identity_threshold, args.len_threshold)
 

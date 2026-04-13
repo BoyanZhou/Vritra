@@ -23,18 +23,11 @@ Function Overview:
 
 import os
 import json
-# import networkx as nx
 import pandas as pd
 from Bio import SeqIO
 import log_setup
 import argparse
-
 import recluster_species_UniRef
-# import identity_within_group as iwg
-# import affinity_propagation as aff_p
-# import get_centroid
-# import clarify_species_different_uniref90 as csdu
-# import uniref100_represent_info as uni_rep_info
 
 
 class UniRefSpecies:
@@ -131,7 +124,6 @@ class UniRefSpecies:
         """
         :return: Add four columns to the original self.corresponding_df to get new core_uniref_df
         """
-        # 1. merge all rep seqs (注意这里都是species有值的，不是"")
         uniref100_rep_represented_dict = self.uniref100_from_single_species.copy()
         uniref100_rep_represented_dict.update(self.uniref100_from_multiple_species)
         # 2. build the correspondence between {UniRef100: UniRef90}, and {UniRef100, species}
@@ -352,17 +344,6 @@ class UniRefSpecies:
             self.uniref100_from_single_species.update({centroid_seq_uniref100_id: list(uniref100_series)})
 
 
-"""
-UniRef90_O87838 和 UniRef90_A0A917RK06 中的 Streptomyces rochei 应该是一起的！！！
-corresponding_df_temp.loc[corresponding_df_temp["UniRef90_ID"] == "UniRef90_O87838"]
-corresponding_df_temp.loc[corresponding_df_temp["UniRef90_ID"] == "UniRef90_A0A917RK06"]
-
-UniRef90_A0A917RK06 和 UniRef90_A0A640UML5 中的 Streptomyces sparsogenes 应该是一起的！！！
-corresponding_df_temp.loc[corresponding_df_temp["UniRef90_ID"] == "UniRef90_A0A917RK06"]
-corresponding_df_temp.loc[corresponding_df_temp["UniRef90_ID"] == "UniRef90_A0A640UML5"]
-"""
-
-
 #################################
 # read uniref taxonomy csv file #
 #################################
@@ -468,19 +449,6 @@ def expand_uniref90_to_100(gene_prefix, core_uniref90_path, out_dir, logger):
     logger.info(f"For {len(uniref100_api_response_dict)} UniRef100s, {len(uniref100_api_response_dict['Success 200: Success'])} are successfully fetched.")
     logger.info(uniref90_api_response_dict)
     logger.info(uniref100_api_response_dict)
-
-
-################################################
-# Read the uniref100 sequences using Biopython #
-################################################
-"""
-result_file = open('test_biopython_record_dict.fasta', "w")
-record_dict = SeqIO.to_dict(SeqIO.parse("/gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/FRC/frc_blast_iteration_final_set/frc_target_UniRef100.fas", "fasta"))
-
-# 看看之前第一个cluster的在不在uniref100的fasta中
-sum(input_df.loc[input_df["UniRef90_ID"].isin(pd.Series(d[0]))]["UniRef100_ID"].isin(record_dict.keys()))
-len(input_df.loc[input_df["UniRef90_ID"].isin(pd.Series(d[0]))]["UniRef100_ID"])
-"""
 
 
 def get_args():
