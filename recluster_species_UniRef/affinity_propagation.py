@@ -1,16 +1,11 @@
 """
 Affinity propagation algorithm
 
-module add diamond/0.9.18
-module add python/cpu/3.6.5
-
 """
 
-# import networkx as nx
 import pandas as pd
 import numpy as np
 from sklearn.cluster import AffinityPropagation
-# from sklearn.metrics.pairwise import pairwise_distances
 
 
 def affinity_propagation_clustering(pairwise_identity_df):
@@ -40,19 +35,6 @@ def affinity_propagation_clustering(pairwise_identity_df):
     for idx, label in enumerate(labels):
         clusters[f'cluster_{label}'].append(sequences[idx])
     return clusters
-
-
-"""
-# Example usage
-data = pd.DataFrame({
-    'query_sequence': ['seq1', 'seq2', 'seq3', 'seq4', 'seq5', 'seq6'],
-    'target_sequence': ['seq2', 'seq3', 'seq4', 'seq5', 'seq1', 'seq3'],
-    'identity': [98, 99, 97, 100, 99, 98]
-})
-
-clusters_ap = affinity_propagation_clustering(data)
-print(clusters_ap)
-"""
 
 
 def greedy_affinity_clustering(pairwise_identity_df, centroid_uniref100_uniref90_dict, iden_threshold=95):

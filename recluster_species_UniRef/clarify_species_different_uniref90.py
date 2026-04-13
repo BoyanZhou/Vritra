@@ -58,7 +58,6 @@ def clarify_same_species_different_uniref90(corresponding_df_temp, seq_record_to
             target_uniref_id_list = within_species_df["UniRef100_ID"]
             print(f"For species {species_name}, the length of target_uniref_id_list is {len(target_uniref_id_list)}.")
             # pairwise_iden_df.columns = ['Seq1', 'Seq2', 'Identity'], then add ['Seq1_UniRef90', 'Seq2_UniRef90']
-            # 2025/02/19, target_uniref_id_list 需要在 seq_record_total 中
             pairwise_iden_df = iwg.pairwise_identity_by_two_method(seq_record_total, output_temp_fas_path, target_uniref_id_list, 20, True)
             # # annotate the UniRef90 for each 'Seq1', 'Seq2' (UniRef100)
             pairwise_iden_df['Seq1_UniRef90'] = pairwise_iden_df["Seq1"].map(within_species_df.set_index("UniRef100_ID")["UniRef90_ID"])

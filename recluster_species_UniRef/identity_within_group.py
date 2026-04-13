@@ -1,13 +1,3 @@
-"""
-原先想使用 pairwise alignment，但是速度太慢，处理数千的 pairwise 都可能需要几十个小时；
-所以sequence较多的group使用blast，较少的则直接使用Biopython
-
-module add diamond/0.9.18
-module add python/cpu/3.6.5
-
-"""
-
-
 import pandas as pd
 from Bio import SeqIO
 import os
@@ -109,13 +99,6 @@ def subset_fas_given_uniref100(all_seq_dict, output_fas_path, target_uniref_id_l
     result_file.close()
     print(f"In identity_within_group, {len(found_uniref_id_list)} UniRef IDs are found. "
           f"{len(not_found_uniref_id_list)} UniRef IDs are not found. They are {not_found_uniref_id_list}")
-
-
-"""
-input_fas_path = "/gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/FRC/frc_blast_iteration_final_set/frc_target_UniRef100.fas"
-output_fas_path = "/gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/FRC/frc_blast_iteration_final_set/UniRef100_under_UniRef90_O87838.fas"
-subset_fas_given_uniref100(input_fas_path, output_fas_path, list(largest_Uniref90["UniRef100_ID"]))
-"""
 
 
 def blast_to_self(fas_path, num_alignments=100):

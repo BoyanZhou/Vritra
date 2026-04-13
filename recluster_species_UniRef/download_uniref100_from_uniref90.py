@@ -8,21 +8,6 @@ import sys
 import construct_database.uniref90_to_uniref100_taxon_ranks as uniref_taxon
 
 
-"""
-Main Function: input UniRef90 fas, output UniRef100 fas
-
-download_seq_from_json:
-给定一个json文件，下载这个json所含有字典的所有sequence；注意！这里的json file 由 
-script1_uniref90_fas_to_uniref100_fas_taxon_ranks.py 产生，key是UniRef90 ID，然后本体是该UniRef90 的representative seq
-如果还有其他的UniRef100在此UniRef90下则保存在 “members”中
-
-# metagenomic requires, then diamond v2.0.15.153 will be loaded automatically
-module add python/cpu/3.7.2
-# !!! but for this script, we must use python 3.6.5, because only under this python, ete3 is available 
-module add python/cpu/3.6.5
-"""
-
-
 #################
 # main function #
 #################
@@ -91,17 +76,4 @@ def download_seq_from_json(json_path, download_seq_path):
 
 
 if __name__ == "__main__":
-    # Out_dir = "/gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/uric_acid_gene_set"
-    # Uniref90_fas_path = os.path.join(Out_dir, "uric_acid_gene_set_to_uniref90_P66899_all_seq_after_iteration.fas")
-    # Output_json_path = os.path.join(Out_dir, "uric_acid_gene_set_to_uniref90_P66899_all_seq_after_iteration_uniref100.json")
-    # Output_taxon_ranks_path = os.path.join(Out_dir, "uric_acid_gene_set_to_uniref90_P66899_all_seq_after_iteration_uniref100_taxon_ranks.csv")
-    # Json_path, Download_seq_path = sys.argv[1:3]
-    # download_seq_from_json(Json_path, Download_seq_path)
-    """
-    Out_dir = "/gpfs/data/lilab/home/zhoub03/generalized_pipeline_20240925/result/P19409_baiB_202502/dataset_construction"
-    In_uniref90_fas_path = os.path.join(Out_dir, "baiB_pre_labeled_and_new_labeled.fas")
-    Output_json_path = os.path.join(Out_dir, "baiB_pre_labeled_and_new_labeled_uniref90_100.json")
-    Output_taxon_ranks_path = os.path.join(Out_dir, "baiB_pre_labeled_and_new_labeled_uniref90_100_taxon_ranks.csv")
-    Out_uniref100_fas_path = os.path.join(Out_dir, "baiB_pre_labeled_and_new_labeled_uniref100.fas")
-    uniref90_to_100_fas(In_uniref90_fas_path, Output_json_path, Output_taxon_ranks_path, Out_uniref100_fas_path)
-    """
+    pass
